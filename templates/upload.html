@@ -3,44 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Envio de Imagens e Síntese de Texto</title>
+    <title>NINOEDU TTS</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            font-family: Poppins, sans-serif;
+            font-size: 16px;
+            font-weight: 400;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            background: linear-gradient(to bottom, #002c6a, #0764a3);
         }
+
         .container {
             background-color: #ffffff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
             text-align: center;
         }
+
         h1 {
             color: #333;
         }
+
+        .tabs {
+            overflow: hidden;
+            background-color: #007bff;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .tab-button {
+            background-color: #007bff;
+            border: none;
+            outline: none;
+            padding: 14px 16px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #ffffff;
+            border-radius: 4px 4px 0 0;
+            transition: background-color 0.3s, border-bottom 0.3s;
+            flex: 1;
+            text-align: center;
+        }
+
+        .tab-button:hover, .tab-button.active {
+            background-color: #0056b3;
+            border-bottom: 2px solid #ffffff;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 0 0 4px 4px;
+            background-color: #fff;
+            max-height: 500px; /* Ajuste a altura máxima conforme necessário */
+            overflow-y: auto; /* Adiciona scroll vertical se necessário */
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         input[type="text"], input[type="file"] {
-            width: calc(50% - 12px);
+            width: calc(100% - 22px);
             padding: 10px;
-            margin: 5px;
+            margin: 10px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
-            display: inline-block;
         }
-        input[type="file"] {
-            width: calc(50% - 12px);
-            padding: 10px;
-            margin: 5px;
-        }
+
         button {
             background-color: #007bff;
             color: #ffffff;
@@ -52,97 +95,222 @@
             display: block;
             margin: 20px auto;
         }
+
         button:hover {
             background-color: #0056b3;
         }
-        .image-preview, .audio-preview {
+
+        .notification {
             margin-top: 20px;
-            text-align: left;
+            padding: 10px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            display: none;
         }
-        .image-preview img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-            margin-bottom: 10px;
+
+        .notification.success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
         }
-        audio {
-            margin-top: 10px;
-            width: 100%;
-            border-radius: 4px;
+
+        .notification.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
         }
-        .download-link {
-            display: block;
-            color: #007bff;
+
+        #download-btn {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
             text-decoration: none;
-            margin-top: 10px;
+            border-radius: 5px;
+            font-weight: bold;
         }
-        .download-link:hover {
-            text-decoration: underline;
+
+        .image-previews {
+            max-height: 200px; /* Ajuste a altura máxima conforme necessário */
+            overflow-y: auto; /* Adiciona scroll vertical se necessário */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center; /* Centraliza as imagens */
+            padding: 10px; /* Adiciona um pouco de padding ao redor das imagens */
+        }
+
+        .image-preview {
+            width: 150px; /* Ajuste o tamanho conforme necessário */
+            height: 150px;
+            object-fit: cover; /* Mantém a proporção da imagem */
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Envio de Imagens e Síntese de Texto</h1>
-        <form id="upload-form" enctype="multipart/form-data">
-            <div id="file-fields">
-                <input type="text" name="image_names" placeholder="Nome da Imagem" required>
-                <input type="file" name="images" accept="image/*" required>
-            </div>
-            <button type="button" onclick="addFields()">Adicionar Outro</button><br>
-            <button type="button" onclick="uploadImages()">Enviar Imagens</button>
-        </form>
-        <div id="results">
-            <div id="image-previews" class="image-preview"></div>
-            <div id="audio-previews" class="audio-preview"></div>
+        <h1>NINOEDU TTS</h1>
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('upload-tab')">Gerar ZIP</button>
+            <button class="tab-button" onclick="showTab('text-tab')">Síntese de Texto</button>
         </div>
+
+        <div id="upload-tab" class="tab-content active">
+            <form id="upload-form" enctype="multipart/form-data">
+                <div id="words-container">
+                    <div class="word-block">
+                        <input type="text" name="word" placeholder="Digite a palavra" required><br>
+                        <input type="text" name="silaba" placeholder="Digite a sílaba" required><br>
+                        <input type="text" name="complemento_silaba" placeholder="Digite o complemento da sílaba" required><br>
+                        <input type="file" name="images_0" accept="image/*" multiple required><br>
+                        <div class="image-previews" id="images-preview-0"></div>
+                    </div>
+                </div>
+                <button type="button" id="add-word-btn">Adicionar Outra Palavra</button>
+                <button type="submit">Gerar ZIP</button>
+            </form>
+        </div>
+
+        <div id="text-tab" class="tab-content">
+            <form id="text-form">
+                <input type="text" name="text" placeholder="Digite o texto" required><br>
+                <button type="submit">Gerar Áudio</button>
+            </form>
+        </div>
+
+        <div class="notification" id="notification"></div>
     </div>
 
     <script>
-        function addFields() {
-            var fileFields = document.getElementById('file-fields');
-            var newField = document.createElement('div');
-            newField.innerHTML = `
-                <input type="text" name="image_names" placeholder="Nome da Imagem" required>
-                <input type="file" name="images" accept="image/*" required>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            
+            document.querySelector(`button[onclick="showTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        const form = document.getElementById('upload-form');
+        const textForm = document.getElementById('text-form');
+        const notification = document.getElementById('notification');
+        const addWordBtn = document.getElementById('add-word-btn');
+        const wordsContainer = document.getElementById('words-container');
+        let wordBlockCount = 1;
+
+        // Adicionar uma nova seção de palavra
+        addWordBtn.addEventListener('click', function() {
+            const wordBlock = document.createElement('div');
+            wordBlock.classList.add('word-block');
+            wordBlock.innerHTML = `
+                <input type="text" name="word" placeholder="Digite a palavra" required><br>
+                <input type="text" name="silaba" placeholder="Digite a sílaba" required><br>
+                <input type="text" name="complemento_silaba" placeholder="Digite o complemento da sílaba" required><br>
+                <input type="file" name="images_${wordBlockCount}" accept="image/*" multiple required><br>
+                <div class="image-previews" id="images-preview-${wordBlockCount}"></div>
             `;
-            fileFields.appendChild(newField);
-        }
+            wordsContainer.appendChild(wordBlock);
+            wordBlockCount++;
+        });
 
-        function uploadImages() {
-            var form = document.getElementById('upload-form');
-            var formData = new FormData(form);
+        form.addEventListener('change', function(event) {
+            if (event.target.type === 'file') {
+                const input = event.target;
+                const previewContainer = document.getElementById(`images-preview-${input.name.split('_')[1]}`);
+                
+                // Limpa a área de pré-visualização existente
+                previewContainer.innerHTML = '';
 
-            fetch('/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                var imagePreviews = document.getElementById('image-previews');
-                var audioPreviews = document.getElementById('audio-previews');
-                imagePreviews.innerHTML = '';
-                audioPreviews.innerHTML = '';
+                for (const file of input.files) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.classList.add('image-preview');
+                        previewContainer.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
 
-                data.image_urls.forEach((url, index) => {
-                    var img = document.createElement('img');
-                    img.src = url;
-                    imagePreviews.appendChild(img);
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
 
-                    var audio = document.createElement('audio');
-                    audio.controls = true;
-                    audio.src = data.audio_urls[index];
-                    audioPreviews.appendChild(audio);
+            const formData = new FormData(form);
+            notification.style.display = 'none';
 
-                    var downloadLink = document.createElement('a');
-                    downloadLink.href = data.download_urls[index];
-                    downloadLink.textContent = 'Baixar Áudio ' + (index + 1);
-                    downloadLink.classList.add('download-link');
-                    audioPreviews.appendChild(downloadLink);
+            try {
+                const response = await fetch('/', {
+                    method: 'POST',
+                    body: formData
                 });
-            })
-            .catch(error => console.error('Error:', error));
-        }
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'assets.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+
+                    notification.textContent = 'ZIP gerado e baixado com sucesso!';
+                    notification.className = 'notification success';
+                    notification.style.display = 'block';
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Erro ao gerar o ZIP.');
+                }
+            } catch (error) {
+                notification.textContent = error.message;
+                notification.className = 'notification error';
+                notification.style.display = 'block';
+            }
+        });
+
+        textForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(textForm);
+            notification.style.display = 'none';
+
+            try {
+                const response = await fetch('/synthesize', {
+                    method: 'POST',
+                    body: JSON.stringify(Object.fromEntries(formData)),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'synthesized.mp3';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+
+                    notification.textContent = 'Áudio gerado e baixado com sucesso!';
+                    notification.className = 'notification success';
+                    notification.style.display = 'block';
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Erro ao sintetizar o texto.');
+                }
+            } catch (error) {
+                notification.textContent = error.message;
+                notification.className = 'notification error';
+                notification.style.display = 'block';
+            }
+        });
     </script>
 </body>
 </html>
