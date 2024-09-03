@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Envio de Imagens e Síntese de Texto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        input[type="text"], input[type="file"] {
+            width: calc(50% - 12px);
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            display: inline-block;
+        }
+        input[type="file"] {
+            width: calc(50% - 12px);
+            padding: 10px;
+            margin: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .image-preview, .audio-preview {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .image-preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        audio {
+            margin-top: 10px;
+            width: 100%;
+            border-radius: 4px;
+        }
+        .download-link {
+            display: block;
+            color: #007bff;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+        .download-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Envio de Imagens e Síntese de Texto</h1>
+        <form id="upload-form" enctype="multipart/form-data">
+            <div id="file-fields">
+                <input type="text" name="image_names" placeholder="Nome da Imagem" required>
+                <input type="file" name="images" accept="image/*" required>
+            </div>
+            <button type="button" onclick="addFields()">Adicionar Outro</button><br>
+            <button type="button" onclick="uploadImages()">Enviar Imagens</button>
+        </form>
+        <div id="results">
+            <div id="image-previews" class="image-preview"></div>
+            <div id="audio-previews" class="audio-preview"></div>
+        </div>
+    </div>
+
+    <script>
+        function addFields() {
+            var fileFields = document.getElementById('file-fields');
+            var newField = document.createElement('div');
+            newField.innerHTML = `
+                <input type="text" name="image_names" placeholder="Nome da Imagem" required>
+                <input type="file" name="images" accept="image/*" required>
+            `;
+            fileFields.appendChild(newField);
+        }
+
+        function uploadImages() {
+            var form = document.getElementById('upload-form');
+            var formData = new FormData(form);
+
+            fetch('/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                var imagePreviews = document.getElementById('image-previews');
+                var audioPreviews = document.getElementById('audio-previews');
+                imagePreviews.innerHTML = '';
+                audioPreviews.innerHTML = '';
+
+                data.image_urls.forEach((url, index) => {
+                    var img = document.createElement('img');
+                    img.src = url;
+                    imagePreviews.appendChild(img);
+
+                    var audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = data.audio_urls[index];
+                    audioPreviews.appendChild(audio);
+
+                    var downloadLink = document.createElement('a');
+                    downloadLink.href = data.download_urls[index];
+                    downloadLink.textContent = 'Baixar Áudio ' + (index + 1);
+                    downloadLink.classList.add('download-link');
+                    audioPreviews.appendChild(downloadLink);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
